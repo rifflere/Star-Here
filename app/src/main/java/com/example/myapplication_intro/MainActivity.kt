@@ -23,26 +23,16 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.VectorProperty
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.myapplication_intro.ui.theme.MyApplication_introTheme
-import org.hipparchus.geometry.euclidean.threed.Rotation
-import org.hipparchus.geometry.euclidean.threed.Vector3D
-import org.orekit.bodies.GeodeticPoint
-import org.orekit.bodies.OneAxisEllipsoid
-import org.orekit.frames.FramesFactory
-import org.orekit.frames.TopocentricFrame
-import org.orekit.time.AbsoluteDate
-import org.orekit.time.TimeScalesFactory
-import org.orekit.utils.Constants
 
 data class FiveValues(
-    val first: Any,
-    val second: Any,
-    val third: Any,
-    val fourth: Any,
-    val fifth: Any
+    val first: Float,
+    val second: Float,
+    val third: Float,
+    val fourth: Float,
+    val fifth: Float
 )
 class MainActivity : ComponentActivity() {
 
@@ -70,7 +60,7 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun SensorScreen(sensorManager: SensorManager) {
     // UI state that will drive recomposition
-    var header by remember { mutableStateOf("timestamp_ms,sensor,x,y,z") }
+    var header by remember { mutableStateOf("Star Here") }
     var rotat by remember { mutableStateOf(FiveValues(0f, 0f, 0f, 0f, 0f)) }
     var gyro by remember { mutableStateOf(Triple(0f, 0f, 0f)) }
     var lastLine by remember { mutableStateOf("") }
@@ -138,7 +128,7 @@ fun SensorScreen(sensorManager: SensorManager) {
 @Composable
 private fun SensorScreenContent(
     header: String,
-    rotat: FiveValues<Float, Float, Float, Float, Float>,
+    rotat: FiveValues,
     gyro: Triple<Float, Float, Float>,
     lastLine: String
 ) {
@@ -164,7 +154,7 @@ private fun SensorScreenPreview() {
         ) {
             // Fake values so you can sanity check layout and formatting
             SensorScreenContent(
-                header = "Sensor Output",
+                header = "Star Here",
                 rotat = FiveValues(0.12f, 9.74f, -0.05f, -0.05f,-0.05f),
                 gyro = Triple(0.01f, -0.03f, 0.02f),
                 lastLine = "Time (ts): 1733352000000"
