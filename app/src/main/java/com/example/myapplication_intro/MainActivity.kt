@@ -5,92 +5,152 @@ import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
 import android.hardware.SensorManager
 import android.os.Bundle
-import android.widget.TextView
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.myapplication_intro.ui.theme.MyApplication_introTheme
-import java.io.FileWriter
 
-class MainActivity : ComponentActivity(), SensorEventListener {
+class MainActivity : ComponentActivity() {
+
     private lateinit var sensorManager: SensorManager
-    private var accel: Sensor? = null
-    private var gyro: Sensor? = null
-    private lateinit var accelText: TextView
-    private lateinit var gyroText: TextView
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+        sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
+
         setContent {
             MyApplication_introTheme {
-                // A surface container using the 'background' color from the theme
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    OutputData("timestamp_ms,sensor,x,y,z")
+                    SensorScreen(sensorManager = sensorManager)
                 }
             }
         }
-        sensorManager = getSystemService(SENSOR_SERVICE) as SensorManager
-        accel = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
-        gyro = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE)
-
     }
+}
 
-    override fun onSensorChanged(event: SensorEvent) {
-        val ts = System.currentTimeMillis()
-        val sensorName = when (event.sensor.type) {
-            Sensor.TYPE_ACCELEROMETER -> "ACCEL"
-            Sensor.TYPE_GYROSCOPE -> "GYRO"
-            else -> event.sensor.name
+@Composable
+fun SensorScreen(sensorManager: SensorManager) {
+    // UI state that will drive recomposition
+    var header by remember { mutableStateOf("timestamp_ms,sensor,x,y,z") }
+    var accel by remember { mutableStateOf(Triple(0f, 0f, 0f)) }
+    var gyro by remember { mutableStateOf(Triple(0f, 0f, 0f)) }
+    var lastLine by remember { mutableStateOf("") }
+
+    // Register / unregister the listener tied to this composable’s lifecycle
+    DisposableEffect(Unit) {
+        val accelSensor = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
+        val gyroSensor = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE)
+
+        val listener = object : SensorEventListener {
+            override fun onSensorChanged(event: SensorEvent) {
+                val ts = System.currentTimeMillis()
+                val x = event.values.getOrNull(0) ?: 0f
+                val y = event.values.getOrNull(1) ?: 0f
+                val z = event.values.getOrNull(2) ?: 0f
+
+                when (event.sensor.type) {
+                    Sensor.TYPE_ACCELEROMETER -> {
+                        accel = Triple(x, y, z)
+                        lastLine = "$ts,ACCEL,$x,$y,$z"
+                    }
+                    Sensor.TYPE_GYROSCOPE -> {
+                        gyro = Triple(x, y, z)
+                        lastLine = "$ts,GYRO,$x,$y,$z"
+                    }
+                }
+            }
+
+            override fun onAccuracyChanged(sensor: Sensor, accuracy: Int) { /* no-op */ }
         }
-        val x = event.values.getOrNull(0) ?: 0f
-        val y = event.values.getOrNull(1) ?: 0f
-        val z = event.values.getOrNull(2) ?: 0f
 
-        accelText.text = string.format("x: %f, y: %f, z: %f",x,y,z)
+        if (accelSensor != null) {
+            sensorManager.registerListener(
+                listener, accelSensor, SensorManager.SENSOR_DELAY_GAME
+            )
+        }
+        if (gyroSensor != null) {
+            sensorManager.registerListener(
+                listener, gyroSensor, SensorManager.SENSOR_DELAY_GAME
+            )
+        }
+
+        onDispose {
+            sensorManager.unregisterListener(listener)
+        }
     }
 
-    override fun onResume() {
-        super.onResume()
-        sensorManager.registerListener(this, accel, SensorManager.SENSOR_DELAY_GAME)
-        sensorManager.registerListener(this, gyro,  SensorManager.SENSOR_DELAY_GAME)
-    }
-
-    override fun onPause() {
-        super.onPause()
-        sensorManager.unregisterListener(this)
-    }
-
-    override fun onAccuracyChanged(sensor: Sensor, accuracy: Int) {
-        // Do something here if sensor accuracy changes.
-    }
-}
-@Composable
-fun OutputData(message: String, modifier: Modifier = Modifier) {
-    Surface(color = Color.Cyan) {
-        Text(
-            text = message,
-            modifier = modifier.padding(1.dp)
-        )
-    }
+    // Stateless UI call
+    SensorScreenContent(
+        header = header,
+        accel = accel,
+        gyro = gyro,
+        lastLine = lastLine
+    )
 }
 
-@Preview(showBackground = false)
 @Composable
-fun GreetingPreview() {
+private fun SensorScreenContent(
+    header: String,
+    accel: Triple<Float, Float, Float>,
+    gyro: Triple<Float, Float, Float>,
+
+
+
+
+
+
+    lastLine: String
+) {
+    Column(Modifier.fillMaxSize().padding(16.dp)) {
+        Text(header, style = MaterialTheme.typography.titleMedium)
+        Spacer(Modifier.height(8.dp))
+
+        Text("Accelerometer (x, y, z): ${accel.first}, ${accel.second}, ${accel.third}")
+        Text("Gyroscope     (x, y, z): ${gyro.first}, ${gyro.second}, ${gyro.third}")
+
+        Spacer(Modifier.height(16.dp))
+        Text("Last event")
+        Text(lastLine)
+    }
+}
+
+@Preview(showBackground = true, name = "Sensor UI Preview")
+@Composable
+private fun SensorScreenPreview() {
     MyApplication_introTheme {
-        OutputData("timestamp_ms,sensor,x,y,z")
+        Surface(
+            modifier = Modifier.fillMaxSize(),
+            color = MaterialTheme.colorScheme.background
+        ) {
+            // Fake values so you can sanity check layout and formatting
+            SensorScreenContent(
+                header = "timestamp_ms,sensor,x,y,z",
+                accel = Triple(0.12f, 9.74f, -0.05f),
+                gyro = Triple(0.01f, -0.03f, 0.02f),
+                lastLine = "1733352000000,ACCEL,0.12,9.74,-0.05"
+            )
+        }
     }
 }
