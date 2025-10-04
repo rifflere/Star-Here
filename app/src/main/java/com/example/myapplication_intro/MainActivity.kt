@@ -53,7 +53,7 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun SensorScreen(sensorManager: SensorManager) {
     // UI state that will drive recomposition
-    var header by remember { mutableStateOf("timestamp_ms,sensor,x,y,z") }
+    var header by remember { mutableStateOf("Star Here") }
     var rotat by remember { mutableStateOf(Triple(0f, 0f, 0f)) }
     var gyro by remember { mutableStateOf(Triple(0f, 0f, 0f)) }
     var lastLine by remember { mutableStateOf("") }
@@ -147,7 +147,7 @@ private fun SensorScreenPreview() {
         ) {
             // Fake values so you can sanity check layout and formatting
             SensorScreenContent(
-                header = "Sensor Output",
+                header = "Star Here",
                 rotat = Triple(0.12f, 9.74f, -0.05f),
                 gyro = Triple(0.01f, -0.03f, 0.02f),
                 lastLine = "Time (ts): 1733352000000"
