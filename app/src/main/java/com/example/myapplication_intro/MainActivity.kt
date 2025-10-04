@@ -23,10 +23,27 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.VectorProperty
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.myapplication_intro.ui.theme.MyApplication_introTheme
+import org.hipparchus.geometry.euclidean.threed.Rotation
+import org.hipparchus.geometry.euclidean.threed.Vector3D
+import org.orekit.bodies.GeodeticPoint
+import org.orekit.bodies.OneAxisEllipsoid
+import org.orekit.frames.FramesFactory
+import org.orekit.frames.TopocentricFrame
+import org.orekit.time.AbsoluteDate
+import org.orekit.time.TimeScalesFactory
+import org.orekit.utils.Constants
 
+data class FiveValues(
+    val first: Any,
+    val second: Any,
+    val third: Any,
+    val fourth: Any,
+    val fifth: Any
+)
 class MainActivity : ComponentActivity() {
 
     private lateinit var sensorManager: SensorManager
@@ -54,9 +71,10 @@ class MainActivity : ComponentActivity() {
 fun SensorScreen(sensorManager: SensorManager) {
     // UI state that will drive recomposition
     var header by remember { mutableStateOf("timestamp_ms,sensor,x,y,z") }
-    var rotat by remember { mutableStateOf(Triple(0f, 0f, 0f)) }
+    var rotat by remember { mutableStateOf(FiveValues(0f, 0f, 0f, 0f, 0f)) }
     var gyro by remember { mutableStateOf(Triple(0f, 0f, 0f)) }
     var lastLine by remember { mutableStateOf("") }
+
 
     // Register / unregister the listener tied to this composable’s lifecycle
     DisposableEffect(Unit) {
@@ -69,12 +87,16 @@ fun SensorScreen(sensorManager: SensorManager) {
                 val x = event.values.getOrNull(0) ?: 0f
                 val y = event.values.getOrNull(1) ?: 0f
                 val z = event.values.getOrNull(2) ?: 0f
+                val a = event.values.getOrNull(3) ?: 0f
+                val b = event.values.getOrNull(4) ?: 0f
+
+
 
                 lastLine = "Time (ts): $ts"
-
                 when (event.sensor.type) {
                     Sensor.TYPE_ROTATION_VECTOR -> {
-                        rotat = Triple(x, y, z)
+                        rotat = FiveValues(x, y, z, a, b)
+                        /// CONVERTION to j2000 SHOULD GO HERE
 //                        lastLine = "$ts,ACCEL,$x,$y,$z"
                     }
                     Sensor.TYPE_GYROSCOPE -> {
@@ -110,26 +132,21 @@ fun SensorScreen(sensorManager: SensorManager) {
         gyro = gyro,
         lastLine = lastLine
     )
+
 }
 
 @Composable
 private fun SensorScreenContent(
     header: String,
-    rotat: Triple<Float, Float, Float>,
+    rotat: FiveValues<Float, Float, Float, Float, Float>,
     gyro: Triple<Float, Float, Float>,
-
-
-
-
-
-
     lastLine: String
 ) {
     Column(Modifier.fillMaxSize().padding(16.dp)) {
         Text(header, style = MaterialTheme.typography.titleMedium)
         Spacer(Modifier.height(8.dp))
 
-        Text("Rotation Vector (x, y, z): ${rotat.first}, ${rotat.second}, ${rotat.third}")
+        Text("Rotation Vector (x, y, z): ${rotat.first}, ${rotat.second}, ${rotat.third}, ${rotat.fourth}, ${rotat.fifth}")
         Text("Gyroscope     (x, y, z): ${gyro.first}, ${gyro.second}, ${gyro.third}")
 
         Spacer(Modifier.height(16.dp))
@@ -148,7 +165,7 @@ private fun SensorScreenPreview() {
             // Fake values so you can sanity check layout and formatting
             SensorScreenContent(
                 header = "Sensor Output",
-                rotat = Triple(0.12f, 9.74f, -0.05f),
+                rotat = FiveValues(0.12f, 9.74f, -0.05f, -0.05f,-0.05f),
                 gyro = Triple(0.01f, -0.03f, 0.02f),
                 lastLine = "Time (ts): 1733352000000"
             )
