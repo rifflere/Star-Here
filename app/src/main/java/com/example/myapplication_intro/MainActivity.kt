@@ -8,24 +8,23 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.layout.*
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.myapplication_intro.ui.theme.MyApplication_introTheme
+import kotlin.math.PI
+import kotlin.math.cos
+import kotlin.math.min
+import kotlin.math.sin
 
 class MainActivity : ComponentActivity() {
 
@@ -52,13 +51,11 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun SensorScreen(sensorManager: SensorManager) {
-    // UI state that will drive recomposition
     var header by remember { mutableStateOf("Star Here") }
     var rotat by remember { mutableStateOf(Triple(0f, 0f, 0f)) }
     var gyro by remember { mutableStateOf(Triple(0f, 0f, 0f)) }
     var lastLine by remember { mutableStateOf("") }
 
-    // Register / unregister the listener tied to this composable’s lifecycle
     DisposableEffect(Unit) {
         val rotatSensor = sensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR)
         val gyroSensor = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE)
@@ -69,33 +66,22 @@ fun SensorScreen(sensorManager: SensorManager) {
                 val x = event.values.getOrNull(0) ?: 0f
                 val y = event.values.getOrNull(1) ?: 0f
                 val z = event.values.getOrNull(2) ?: 0f
-
                 lastLine = "Time (ts): $ts"
 
                 when (event.sensor.type) {
-                    Sensor.TYPE_ROTATION_VECTOR -> {
-                        rotat = Triple(x, y, z)
-//                        lastLine = "$ts,ACCEL,$x,$y,$z"
-                    }
-                    Sensor.TYPE_GYROSCOPE -> {
-                        gyro = Triple(x, y, z)
-//                        lastLine = "$ts,GYRO,$x,$y,$z"
-                    }
+                    Sensor.TYPE_ROTATION_VECTOR -> rotat = Triple(x, y, z)
+                    Sensor.TYPE_GYROSCOPE -> gyro = Triple(x, y, z)
                 }
             }
 
-            override fun onAccuracyChanged(sensor: Sensor, accuracy: Int) { /* no-op */ }
+            override fun onAccuracyChanged(sensor: Sensor, accuracy: Int) {}
         }
 
         if (rotatSensor != null) {
-            sensorManager.registerListener(
-                listener, rotatSensor, 1000000
-            )
+            sensorManager.registerListener(listener, rotatSensor, 1000000)
         }
         if (gyroSensor != null) {
-            sensorManager.registerListener(
-                listener, gyroSensor, 1000000
-            )
+            sensorManager.registerListener(listener, gyroSensor, 1000000)
         }
 
         onDispose {
@@ -103,7 +89,6 @@ fun SensorScreen(sensorManager: SensorManager) {
         }
     }
 
-    // Stateless UI call
     SensorScreenContent(
         header = header,
         rotat = rotat,
@@ -117,12 +102,6 @@ private fun SensorScreenContent(
     header: String,
     rotat: Triple<Float, Float, Float>,
     gyro: Triple<Float, Float, Float>,
-
-
-
-
-
-
     lastLine: String
 ) {
     Column(Modifier.fillMaxSize().padding(16.dp)) {
@@ -134,10 +113,42 @@ private fun SensorScreenContent(
 
         Spacer(Modifier.height(16.dp))
         Text(lastLine)
+
+        Spacer(Modifier.height(24.dp))
+
+        // ⭐ Star drawing
+        Canvas(modifier = Modifier
+            .size(100.dp)
+            .padding(top = 8.dp)) {
+
+            val center = Offset(size.width / 2, size.height / 2)
+            val radius = min(size.width, size.height) / 2.5f
+            val innerRadius = radius / 2.5f
+
+            val path = Path()
+            val points = mutableListOf<Offset>()
+
+            // Calculate 10 alternating outer and inner points
+            for (i in 0 until 10) {
+                val angle = PI / 2 + i * PI / 5
+                val r = if (i % 2 == 0) radius else innerRadius
+                val x = center.x + (r * cos(angle)).toFloat()
+                val y = center.y - (r * sin(angle)).toFloat()
+                points.add(Offset(x, y))
+            }
+
+            path.moveTo(points[0].x, points[0].y)
+            for (i in 1 until points.size) {
+                path.lineTo(points[i].x, points[i].y)
+            }
+            path.close()
+
+            drawPath(path = path, color = Color(0xFFFFD700)) // gold-yellow star
+        }
     }
 }
 
-@Preview(showBackground = true, name = "Sensor UI Preview")
+@Preview(showBackground = true, name = "Sensor UI Preview with Star")
 @Composable
 private fun SensorScreenPreview() {
     MyApplication_introTheme {
@@ -145,7 +156,6 @@ private fun SensorScreenPreview() {
             modifier = Modifier.fillMaxSize(),
             color = MaterialTheme.colorScheme.background
         ) {
-            // Fake values so you can sanity check layout and formatting
             SensorScreenContent(
                 header = "Star Here",
                 rotat = Triple(0.12f, 9.74f, -0.05f),
