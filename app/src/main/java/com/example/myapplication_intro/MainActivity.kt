@@ -54,13 +54,13 @@ class MainActivity : ComponentActivity() {
 fun SensorScreen(sensorManager: SensorManager) {
     // UI state that will drive recomposition
     var header by remember { mutableStateOf("timestamp_ms,sensor,x,y,z") }
-    var accel by remember { mutableStateOf(Triple(0f, 0f, 0f)) }
+    var rotat by remember { mutableStateOf(arrayOf(1, 2, 3, 4, 5)(0f, 0f, 0f, 0f, 0f)) }
     var gyro by remember { mutableStateOf(Triple(0f, 0f, 0f)) }
     var lastLine by remember { mutableStateOf("") }
 
     // Register / unregister the listener tied to this composable’s lifecycle
     DisposableEffect(Unit) {
-        val accelSensor = sensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER)
+        val rotatSensor = sensorManager.getDefaultSensor(Sensor.TYPE_GEOMAGNETIC_ROTATION_VECTOR)
         val gyroSensor = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE)
 
         val listener = object : SensorEventListener {
@@ -70,14 +70,16 @@ fun SensorScreen(sensorManager: SensorManager) {
                 val y = event.values.getOrNull(1) ?: 0f
                 val z = event.values.getOrNull(2) ?: 0f
 
+                lastLine = "Time (ts): $ts"
+
                 when (event.sensor.type) {
-                    Sensor.TYPE_ACCELEROMETER -> {
-                        accel = Triple(x, y, z)
-                        lastLine = "$ts,ACCEL,$x,$y,$z"
+                    Sensor.TYPE_GEOMAGNETIC_ROTATION_VECTOR -> {
+                        rotat = Triple(x, y, z)
+//                        lastLine = "$ts,ACCEL,$x,$y,$z"
                     }
                     Sensor.TYPE_GYROSCOPE -> {
                         gyro = Triple(x, y, z)
-                        lastLine = "$ts,GYRO,$x,$y,$z"
+//                        lastLine = "$ts,GYRO,$x,$y,$z"
                     }
                 }
             }
@@ -85,14 +87,14 @@ fun SensorScreen(sensorManager: SensorManager) {
             override fun onAccuracyChanged(sensor: Sensor, accuracy: Int) { /* no-op */ }
         }
 
-        if (accelSensor != null) {
+        if (rotatSensor != null) {
             sensorManager.registerListener(
-                listener, accelSensor, SensorManager.SENSOR_DELAY_GAME
+                listener, rotatSensor, 1000000
             )
         }
         if (gyroSensor != null) {
             sensorManager.registerListener(
-                listener, gyroSensor, SensorManager.SENSOR_DELAY_GAME
+                listener, gyroSensor, 1000000
             )
         }
 
@@ -104,7 +106,7 @@ fun SensorScreen(sensorManager: SensorManager) {
     // Stateless UI call
     SensorScreenContent(
         header = header,
-        accel = accel,
+        rotat = rotat,
         gyro = gyro,
         lastLine = lastLine
     )
@@ -113,7 +115,7 @@ fun SensorScreen(sensorManager: SensorManager) {
 @Composable
 private fun SensorScreenContent(
     header: String,
-    accel: Triple<Float, Float, Float>,
+    rotat: Triple<Float, Float, Float>,
     gyro: Triple<Float, Float, Float>,
 
 
@@ -127,11 +129,10 @@ private fun SensorScreenContent(
         Text(header, style = MaterialTheme.typography.titleMedium)
         Spacer(Modifier.height(8.dp))
 
-        Text("Accelerometer (x, y, z): ${accel.first}, ${accel.second}, ${accel.third}")
+        Text("Accelerometer (x, y, z): ${rotat.first}, ${rotat.second}, ${rotat.third}")
         Text("Gyroscope     (x, y, z): ${gyro.first}, ${gyro.second}, ${gyro.third}")
 
         Spacer(Modifier.height(16.dp))
-        Text("Last event")
         Text(lastLine)
     }
 }
@@ -146,10 +147,10 @@ private fun SensorScreenPreview() {
         ) {
             // Fake values so you can sanity check layout and formatting
             SensorScreenContent(
-                header = "timestamp_ms,sensor,x,y,z",
-                accel = Triple(0.12f, 9.74f, -0.05f),
+                header = "Sensor Output",
+                rotat = Triple(0.12f, 9.74f, -0.05f),
                 gyro = Triple(0.01f, -0.03f, 0.02f),
-                lastLine = "1733352000000,ACCEL,0.12,9.74,-0.05"
+                lastLine = "Time (ts): 1733352000000"
             )
         }
     }
