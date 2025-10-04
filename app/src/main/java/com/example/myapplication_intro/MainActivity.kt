@@ -54,13 +54,13 @@ class MainActivity : ComponentActivity() {
 fun SensorScreen(sensorManager: SensorManager) {
     // UI state that will drive recomposition
     var header by remember { mutableStateOf("timestamp_ms,sensor,x,y,z") }
-    var rotat by remember { mutableStateOf(arrayOf(1, 2, 3, 4, 5)(0f, 0f, 0f, 0f, 0f)) }
+    var rotat by remember { mutableStateOf(Triple(0f, 0f, 0f)) }
     var gyro by remember { mutableStateOf(Triple(0f, 0f, 0f)) }
     var lastLine by remember { mutableStateOf("") }
 
     // Register / unregister the listener tied to this composable’s lifecycle
     DisposableEffect(Unit) {
-        val rotatSensor = sensorManager.getDefaultSensor(Sensor.TYPE_GEOMAGNETIC_ROTATION_VECTOR)
+        val rotatSensor = sensorManager.getDefaultSensor(Sensor.TYPE_ROTATION_VECTOR)
         val gyroSensor = sensorManager.getDefaultSensor(Sensor.TYPE_GYROSCOPE)
 
         val listener = object : SensorEventListener {
@@ -73,7 +73,7 @@ fun SensorScreen(sensorManager: SensorManager) {
                 lastLine = "Time (ts): $ts"
 
                 when (event.sensor.type) {
-                    Sensor.TYPE_GEOMAGNETIC_ROTATION_VECTOR -> {
+                    Sensor.TYPE_ROTATION_VECTOR -> {
                         rotat = Triple(x, y, z)
 //                        lastLine = "$ts,ACCEL,$x,$y,$z"
                     }
@@ -129,7 +129,7 @@ private fun SensorScreenContent(
         Text(header, style = MaterialTheme.typography.titleMedium)
         Spacer(Modifier.height(8.dp))
 
-        Text("Accelerometer (x, y, z): ${rotat.first}, ${rotat.second}, ${rotat.third}")
+        Text("Rotation Vector (x, y, z): ${rotat.first}, ${rotat.second}, ${rotat.third}")
         Text("Gyroscope     (x, y, z): ${gyro.first}, ${gyro.second}, ${gyro.third}")
 
         Spacer(Modifier.height(16.dp))
