@@ -79,12 +79,13 @@ fun SensorScreen(sensorManager: SensorManager) {
     var gpsData by remember { mutableStateOf("") }
 
 
-    // ✅ ADD: state for computed sky solution
+    // state for computed sky solution
     var altAzText by remember { mutableStateOf("") }
     var raDecText by remember { mutableStateOf("") }
     var mLabel by remember { mutableStateOf(messierDisplayData("-","-","-")) }
+    var iLabel by remember { mutableStateOf(irsaData("-","-")) }
 
-    // ✅ ADD: TEMP latitude/longitude (replace with GPS later)
+    // TEMP latitude/longitude (replace with GPS later)
     // Kent, WA-ish — replace with your real location or wire Fused Location
     val latDeg = 47.38
     val lonDeg = -122.24
@@ -105,7 +106,7 @@ fun SensorScreen(sensorManager: SensorManager) {
                     Sensor.TYPE_ROTATION_VECTOR -> {
                         rotat = Triple(x, y, z)
 
-                        // ✅ EXACTLY HERE: compute pointing vector → Alt/Az → RA/Dec (J2000) → Messier label
+                        // compute pointing vector → Alt/Az → RA/Dec (J2000) → Messier label
                         val result = computeSkySolutionFromRotationVector(
                             rv = event.values,
                             nowMs = nowMs,
@@ -116,6 +117,7 @@ fun SensorScreen(sensorManager: SensorManager) {
                         raDecText = "RA/Dec (J2000): ${result.raHms}, ${result.decDms}"
                         mLabel = result.nearestMessier//"Nearest Messier: ${result.nearestMessier.name} \n${result.nearestMessier.tag} \n${result.nearestMessier.link}"
                         gpsData = "Lat: $latDeg\n\tLon: $lonDeg"
+                        iLabel = result.iLabel
                     }
                     Sensor.TYPE_GYROSCOPE -> {
                         gyro = Triple(x, y, z)
@@ -142,9 +144,10 @@ fun SensorScreen(sensorManager: SensorManager) {
         gyro = gyro,
         TimeData = TimeData,
         gpsData = gpsData,
-        altAzText = altAzText, // ✅ ADD
-        raDecText = raDecText, // ✅ ADD
-        mLabel = mLabel        // ✅ ADD
+        altAzText = altAzText,
+        raDecText = raDecText,
+        mLabel = mLabel,
+        iLabel = iLabel
     )
 }
 
@@ -155,9 +158,10 @@ private fun SensorScreenContent(
     gyro: Triple<Float, Float, Float>,
     TimeData: String,
     gpsData: String,
-    altAzText: String,   // ✅ ADD
-    raDecText: String,   // ✅ ADD
-    mLabel: messierDisplayData       // ✅ ADD
+    altAzText: String,
+    raDecText: String,
+    mLabel: messierDisplayData,
+    iLabel: irsaData
 ) {
     Column(Modifier.fillMaxSize().padding(16.dp)) {
         Text("\n")
@@ -169,7 +173,7 @@ private fun SensorScreenContent(
         Text("Gyroscope     (x, y, z): \n\t${gyro.first}, ${gyro.second}, ${gyro.third}")
         Text("Time (ms): \n\t${TimeData}")
         Text("GPS Location (deg): \n\t${gpsData}")
-        // ✅ ADD: sky outputs
+        // sky outputs
         Spacer(Modifier.height(12.dp))
         Text("Calculated frame:", style = MaterialTheme.typography.titleMedium)
         Text(altAzText)
@@ -188,11 +192,22 @@ private fun SensorScreenContent(
             }
         }
         )
+        Text(buildAnnotatedString {
+            append("IRSA data: ")
+            withLink(
+                LinkAnnotation.Url(
+                    url = iLabel.link,
+                    TextLinkStyles(style = SpanStyle(color = Color.Blue))
+                )
+            ) {
+                append(iLabel.link)
+            }
+        })
 
 
         Spacer(Modifier.height(24.dp))
 
-        // cute star
+        // star graphic
         Canvas(modifier = Modifier.size(100.dp).padding(top = 8.dp)) {
             val center = Offset(size.width / 2, size.height / 2)
             val radius = min(size.width, size.height) / 2.5f
@@ -230,13 +245,19 @@ private fun SensorScreenPreview() {
                 gpsData = "Lat: 41, Long: 72",
                 altAzText = "Alt/Az: 45.0°, 120.0°",
                 raDecText = "RA/Dec (J2000): 00:42:44, +41:16:09",
-                mLabel = messierDisplayData("-", "-", "-")
+                mLabel = messierDisplayData("-", "-", "-"),
+                iLabel = irsaData("-", "-")
             )
         }
     }
 }
 
 /* ===================== SKY MATH BELOW (self-contained) ===================== */
+
+private data class irsaData(
+    val coord : String,
+    val link: String
+)
 
 private data class messierDisplayData(
     val tag: String,
@@ -250,7 +271,8 @@ private data class SkyResult(
     val decRadJ2000: Double,
     val raHms: String,
     val decDms: String,
-    val nearestMessier: messierDisplayData
+    val nearestMessier: messierDisplayData,
+    val iLabel: irsaData
 )
 
 /** Main pipeline from rotation vector to J2000 + Messier */
@@ -291,6 +313,13 @@ private fun computeSkySolutionFromRotationVector(
     // 7) Find nearest Messier (from a small sample; expand list for full coverage)
     val m = findNearestMessier(raJ, decJ)
 
+    // Build IRSA link from raJ and decJ
+    val iLabel = irsaData("$raJ, $decJ", "https://irsa.ipac.caltech.edu/cgi-bin/Radar/nph-discovery?objstr=${raJ}${decJ}%20Equ%20J2000&mode=cone&radius=5&radunits=arcmin")
+
+    /*
+    * https://irsa.ipac.caltech.edu/cgi-bin/Radar/nph-discovery?objstr=00%3A42%3A44.3%20%2B41%3A16%3A08%20Equ%20J2000&mode=cone&radius=5&radunits=arcmin
+    * */
+
     return SkyResult(
         altDeg = Math.toDegrees(altRad),
         azDeg = Math.toDegrees(azTrueRad),
@@ -298,7 +327,8 @@ private fun computeSkySolutionFromRotationVector(
         decRadJ2000 = decJ,
         raHms = raRadToHMS(raJ),
         decDms = decRadToDMS(decJ),
-        nearestMessier = m
+        nearestMessier = m,
+        iLabel = iLabel
     )
 }
 
@@ -366,7 +396,7 @@ private fun precessToJ2000(ra: Double, dec: Double, jd: Double): Pair<Double, Do
     return Pair(raJ, decJ)
 }
 
-/** Find nearest Messier from a tiny demo list. Expand this with full M1–M110 later. */
+/** Find nearest Messier. */
 private data class MObj(val tag: String, val raRad: Double, val decRad: Double, val name: String, val link: String)
 private val messierMini = listOf(
     // NOTE: rough J2000 positions; good enough for demo
