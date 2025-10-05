@@ -89,7 +89,7 @@ fun SensorScreen(sensorManager: SensorManager) {
                         )
                         altAzText = "Alt/Az: ${result.altDeg.format(1)}°, ${result.azDeg.format(1)}°"
                         raDecText = "RA/Dec (J2000): ${result.raHms}, ${result.decDms}"
-                        mLabel = "Nearest Messier: ${result.nearestMessier}"
+                        mLabel = "Nearest Messier: ${result.nearestMessier.name} \n\t${result.nearestMessier.tag} \n\t${result.nearestMessier.link}"
 
                     }
                     Sensor.TYPE_GYROSCOPE -> {
@@ -150,7 +150,7 @@ private fun SensorScreenContent(
 
         Spacer(Modifier.height(24.dp))
 
-        // (optional) cute star from your previous ask
+        // cute star
         Canvas(modifier = Modifier.size(100.dp).padding(top = 8.dp)) {
             val center = Offset(size.width / 2, size.height / 2)
             val radius = min(size.width, size.height) / 2.5f
@@ -195,6 +195,11 @@ private fun SensorScreenPreview() {
 
 /* ===================== SKY MATH BELOW (self-contained) ===================== */
 
+private data class messierDisplayData(
+    val tag: String,
+    val name: String,
+    val link: String
+)
 private data class SkyResult(
     val altDeg: Double,
     val azDeg: Double,    // true-azimuth (0=N, 90=E)
@@ -202,7 +207,7 @@ private data class SkyResult(
     val decRadJ2000: Double,
     val raHms: String,
     val decDms: String,
-    val nearestMessier: String
+    val nearestMessier: messierDisplayData
 )
 
 /** Main pipeline from rotation vector to J2000 + Messier */
@@ -319,31 +324,107 @@ private fun precessToJ2000(ra: Double, dec: Double, jd: Double): Pair<Double, Do
 }
 
 /** Find nearest Messier from a tiny demo list. Expand this with full M1–M110 later. */
-private data class MObj(val tag: String, val raRad: Double, val decRad: Double, val name: String)
+private data class MObj(val tag: String, val raRad: Double, val decRad: Double, val name: String, val link: String)
 private val messierMini = listOf(
     // NOTE: rough J2000 positions; good enough for demo
-    MObj("m31",  degToRad( 10.6847 ), degToRad( 41.2690 ), "Andromeda Galaxy"), // Andromeda Galaxy
-    MObj("m42",  hToRad(5.0 + 35.0/60.0), degToRad(-5.45 ), "Orion Nebula"), // Orion Nebula
-    MObj("m45",  hToRad(3.0 + 47.0/60.0), degToRad(24.1  ), "Pleiades"), // Pleiades
-    MObj("m13",  hToRad(16.0 + 41.0/60.0), degToRad(36.46), "Hecules Cluster"), // Hercules Cluster
-    MObj("m57",  hToRad(18.0 + 53.0/60.0), degToRad(33.03), "Ring Nebula"), // Ring Nebula
-    MObj("m1",   hToRad(5.0 + 34.0/60.0), degToRad(22.01), "Crab Nebula"),  // Crab Nebula
-    MObj("m51",  hToRad(13.0 + 29.0/60.0), degToRad(47.20), "Whirlpool"), // Whirlpool
-    MObj("m33",  hToRad(1.0 + 33.0/60.0), degToRad(30.66), "Triangulum")   // Triangulum
+    MObj("m1",  degToRad( 83.6331 ), degToRad( 22.0145 ), "Crab Nebula", "https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-1/"), // Crab Nebula, https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-1/
+    MObj("m2",  degToRad( 323.3625 ), degToRad( -0.8233 ), "Globular Cluster in Aquarius", "https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-2/"), // Globular Cluster in Aquarius, https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-2/
+    MObj("m3",  degToRad( 205.5484 ), degToRad( 28.3772 ), "Globular Cluster in Canes Venatici", "https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-3/"), // Globular Cluster in Canes Venatici, https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-3/
+    MObj("m4",  degToRad( 245.8967 ), degToRad( -26.5258 ), "Globular Cluster in Scorpius", "https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-4/"), // Globular Cluster in Scorpius, https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-4/
+    MObj("m5",  degToRad( 229.6383 ), degToRad( 2.0819 ), "Globular Cluster in Serpens", "https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-5/"), // Globular Cluster in Serpens, https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-5/
+    MObj("m6",  degToRad( 265.0800 ), degToRad( -32.2525 ), "Butterfly Cluster", "https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-6/"), // Butterfly Cluster, https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-6/
+    MObj("m7",  degToRad( 268.4625 ), degToRad( -34.7933 ), "Ptolemy Cluster", "https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-7/"), // Ptolemy Cluster, https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-7/
+    MObj("m8",  degToRad( 270.9250 ), degToRad( -24.3800 ), "Lagoon Nebula", "https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-8/"), // Lagoon Nebula, https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-8/
+    MObj("m9",  degToRad( 262.8042 ), degToRad( -18.5167 ), "Globular Cluster in Ophiuchus", "https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-9/"), // Globular Cluster in Ophiuchus, https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-9/
+    MObj("m10", degToRad( 254.2875 ), degToRad( -4.0997 ), "Globular Cluster in Ophiuchus", "https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-10/"), // Globular Cluster in Ophiuchus, https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-10/
+    MObj("m11", degToRad( 282.7708 ), degToRad( -6.2700 ), "Wild Duck Cluster", "https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-11/"), // Wild Duck Cluster, https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-11/
+    MObj("m12", degToRad( 251.8083 ), degToRad( -1.9483 ), "Globular Cluster in Ophiuchus", "https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-12/"), // Globular Cluster in Ophiuchus, https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-12/
+    MObj("m13", degToRad( 250.4217 ), degToRad( 36.4611 ), "Great Hercules Cluster", "https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-13/"), // Great Hercules Cluster, https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-13/
+    MObj("m14", degToRad( 264.4000 ), degToRad( -3.2458 ), "Globular Cluster in Ophiuchus", "https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-14/"), // Globular Cluster in Ophiuchus, https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-14/
+    MObj("m15", degToRad( 322.4938 ), degToRad( 12.1667 ), "Pegasus Cluster", "https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-15/"), // Pegasus Cluster, https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-15/
+    MObj("m16", degToRad( 274.7000 ), degToRad( -13.8067 ), "Eagle Nebula", "https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-16/"), // Eagle Nebula, https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-16/
+    MObj("m17", degToRad( 275.2000 ), degToRad( -16.1750 ), "Omega Nebula", "https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-17/"), // Omega Nebula, https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-17/
+    MObj("m18", degToRad( 275.4750 ), degToRad( -17.1042 ), "Open Cluster in Sagittarius", "https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-18/"), // Open Cluster in Sagittarius, https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-18/
+    MObj("m19", degToRad( 255.6579 ), degToRad( -26.2678 ), "Globular Cluster in Ophiuchus", "https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-19/"), // Globular Cluster in Ophiuchus, https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-19/
+    MObj("m20", degToRad( 270.6554 ), degToRad( -23.0144 ), "Trifid Nebula", "https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-20/"), // Trifid Nebula, https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-20/
+    MObj("m21", degToRad( 270.6500 ), degToRad( -22.4861 ), "Open Cluster in Sagittarius", "https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-21/"), // Open Cluster in Sagittarius, https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-21/
+    MObj("m22", degToRad( 279.1000 ), degToRad( -23.9047 ), "Sagittarius Cluster", "https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-22/"), // Sagittarius Cluster, https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-22/
+    MObj("m23", degToRad( 269.1500 ), degToRad( -19.0167 ), "Open Cluster in Sagittarius", "https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-23/"), // Open Cluster in Sagittarius, https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-23/
+    MObj("m24", degToRad( 273.5583 ), degToRad( -18.4633 ), "Sagittarius Star Cloud", "https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-24/"), // Sagittarius Star Cloud, https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-24/
+    MObj("m25", degToRad( 279.1000 ), degToRad( -19.2500 ), "Open Cluster in Sagittarius", "https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-25/"), // Open Cluster in Sagittarius, https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-25/
+    MObj("m26", degToRad( 281.2500 ), degToRad( -9.3833 ), "Open Cluster in Scutum", "https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-26/"), // Open Cluster in Scutum, https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-26/
+    MObj("m27", degToRad( 299.9000 ), degToRad( 22.7219 ), "Dumbbell Nebula", "https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-27/"), // Dumbbell Nebula, https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-27/
+    MObj("m28", degToRad( 276.1375 ), degToRad( -24.8697 ), "Globular Cluster in Sagittarius", "https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-28/"), // Globular Cluster in Sagittarius, https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-28/
+    MObj("m29", degToRad( 305.9833 ), degToRad( 38.5333 ), "Open Cluster in Cygnus", "https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-29/"), // Open Cluster in Cygnus, https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-29/
+    MObj("m30", degToRad( 325.0925 ), degToRad( -23.1797 ), "Globular Cluster in Capricornus", "https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-30/"), // Globular Cluster in Capricornus, https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-30/
+    MObj("m31", degToRad( 10.6847 ), degToRad( 41.2690 ), "Andromeda Galaxy", "https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-31/"), // Andromeda Galaxy
+    MObj("m32", degToRad( 10.6743 ), degToRad( 40.8652 ), "Dwarf Elliptical Galaxy in Andromeda", "https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-32/"), // Dwarf Elliptical Galaxy in Andromeda
+    MObj("m33", degToRad( 23.4621 ), degToRad( 30.6602 ), "Triangulum Galaxy", "https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-33/"), // Triangulum Galaxy
+    MObj("m34", degToRad( 40.5000 ), degToRad( 42.7833 ), "Open Cluster in Perseus", "https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-34/"), // Open Cluster in Perseus
+    MObj("m35", degToRad( 92.2250 ), degToRad( 24.3333 ), "Open Cluster in Gemini", "https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-35/"), // Open Cluster in Gemini
+    MObj("m36", degToRad( 84.0833 ), degToRad( 34.1367 ), "Open Cluster in Auriga", "https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-36/"), // Open Cluster in Auriga
+    MObj("m37", degToRad( 88.0750 ), degToRad( 32.5533 ), "Open Cluster in Auriga", "https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-37/"), // Open Cluster in Auriga
+    MObj("m38", degToRad( 82.1883 ), degToRad( 35.8500 ), "Open Cluster in Auriga", "https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-38/"), // Open Cluster in Auriga
+    MObj("m39", degToRad( 322.9958 ), degToRad( 48.4333 ), "Open Cluster in Cygnus", "https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-39/"), // Open Cluster in Cygnus
+    MObj("m40", degToRad( 183.7792 ), degToRad( 58.0833 ), "Double Star in Ursa Major", "https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-40/"), // Double Star in Ursa Major
+    MObj("m41", degToRad( 101.5000 ), degToRad( -20.7500 ), "Open Cluster in Canis Major", "https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-41/"), // Open Cluster in Canis Major
+    MObj("m42", degToRad( 83.8221 ), degToRad( -5.3911 ), "Orion Nebula", "https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-42/"), // Orion Nebula
+    MObj("m43", degToRad( 83.8750 ), degToRad( -5.2667 ), "De Mairan’s Nebula", "https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-43/"), // De Mairan’s Nebula
+    MObj("m44", degToRad( 130.0250 ), degToRad( 19.9833 ), "Beehive Cluster (Praesepe)", "https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-44/"), // Beehive Cluster
+    MObj("m45", degToRad( 56.7500 ), degToRad( 24.1167 ), "Pleiades", "https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-45/"), // Pleiades
+    MObj("m46", degToRad( 114.1500 ), degToRad( -14.8167 ), "Open Cluster in Puppis", "https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-46/"), // Open Cluster in Puppis
+    MObj("m47", degToRad( 114.1500 ), degToRad( -14.4833 ), "Open Cluster in Puppis", "https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-47/"), // Open Cluster in Puppis
+    MObj("m48", degToRad( 123.1500 ), degToRad( -5.8000 ), "Open Cluster in Hydra", "https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-48/"), // Open Cluster in Hydra
+    MObj("m49", degToRad( 187.4458 ), degToRad( 8.0000 ), "Elliptical Galaxy in Virgo", "https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-49/"), // Elliptical Galaxy in Virgo
+    MObj("m50", degToRad( 105.7333 ), degToRad( -8.3333 ), "Open Cluster in Monoceros", "https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-50/"), // Open Cluster in Monoceros
+    MObj("m51", degToRad( 202.4708 ), degToRad( 47.1953 ), "Whirlpool Galaxy", "https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-51/"), // Whirlpool Galaxy
+    MObj("m52", degToRad( 351.2000 ), degToRad( 61.5833 ), "Open Cluster in Cassiopeia", "https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-52/"), // Open Cluster in Cassiopeia
+    MObj("m53", degToRad( 198.2308 ), degToRad( 18.1683 ), "Globular Cluster in Coma Berenices", "https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-53/"), // Globular Cluster in Coma Berenices
+    MObj("m54", degToRad( 283.7625 ), degToRad( -30.4797 ), "Globular Cluster in Sagittarius", "https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-54/"), // Globular Cluster in Sagittarius
+    MObj("m55", degToRad( 294.9983 ), degToRad( -30.9647 ), "Globular Cluster in Sagittarius", "https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-55/"), // Globular Cluster in Sagittarius
+    MObj("m56", degToRad( 289.1479 ), degToRad( 30.1833 ), "Globular Cluster in Lyra", "https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-56/"), // Globular Cluster in Lyra
+    MObj("m57", degToRad( 283.3963 ), degToRad( 33.0283 ), "Ring Nebula", "https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-57/"), // Ring Nebula
+    MObj("m58", degToRad( 189.4300 ), degToRad( 11.8183 ), "Spiral Galaxy in Virgo", "https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-58/"), // Spiral Galaxy in Virgo
+    MObj("m59", degToRad( 190.4908 ), degToRad( 11.6469 ), "Elliptical Galaxy in Virgo", "https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-59/"), // Elliptical Galaxy in Virgo
+    MObj("m60", degToRad( 190.9167 ), degToRad( 11.5500 ), "Elliptical Galaxy in Virgo", "https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-60/"), // Elliptical Galaxy in Virgo
+    MObj("m61", degToRad( 185.4788 ), degToRad( 4.4733 ), "Spiral Galaxy in Virgo", "https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-61/"), // Spiral Galaxy in Virgo
+    MObj("m62", degToRad( 255.3000 ), degToRad( -30.1111 ), "Globular Cluster in Ophiuchus", "https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-62/"), // Globular Cluster in Ophiuchus
+    MObj("m63", degToRad( 198.9567 ), degToRad( 42.0292 ), "Sunflower Galaxy", "https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-63/"), // Sunflower Galaxy
+    MObj("m64", degToRad( 194.1829 ), degToRad( 21.6825 ), "Black Eye Galaxy", "https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-64/"), // Black Eye Galaxy
+    MObj("m65", degToRad( 169.7250 ), degToRad( 13.0925 ), "Spiral Galaxy in Leo", "https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-65/"), // Spiral Galaxy in Leo
+    MObj("m66", degToRad( 170.0625 ), degToRad( 12.9919 ), "Spiral Galaxy in Leo", "https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-66/"), // Spiral Galaxy in Leo
+    MObj("m67", degToRad( 132.8250 ), degToRad( 11.8167 ), "Open Cluster in Cancer", "https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-67/"), // Open Cluster in Cancer
+    MObj("m68", degToRad( 189.8667 ), degToRad( -26.7447 ), "Globular Cluster in Hydra", "https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-68/"), // Globular Cluster in Hydra
+    MObj("m69", degToRad( 277.8463 ), degToRad( -32.3483 ), "Globular Cluster in Sagittarius", "https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-69/"), // Globular Cluster in Sagittarius
+    MObj("m70", degToRad( 280.8033 ), degToRad( -32.2922 ), "Globular Cluster in Sagittarius", "https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-70/"), // Globular Cluster in Sagittarius
+    MObj("m71", degToRad( 298.4433 ), degToRad( 18.7797 ), "Globular Cluster in Sagitta", "https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-71/"), // Globular Cluster in Sagitta
+    MObj("m72", degToRad( 313.3667 ), degToRad( -12.5378 ), "Globular Cluster in Aquarius", "https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-72/"), // Globular Cluster in Aquarius
+    MObj("m73", degToRad( 314.7500 ), degToRad( -12.6333 ), "Asterism in Aquarius", "https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-73/"), // Asterism in Aquarius
+    MObj("m74", degToRad( 24.1742 ), degToRad( 15.7833 ), "Phantom Galaxy", "https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-74/"), // Phantom Galaxy
+    MObj("m75", degToRad( 302.4842 ), degToRad( -21.9225 ), "Globular Cluster in Sagittarius", "https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-75/"), // Globular Cluster in Sagittarius
+    MObj("m76", degToRad( 25.5917 ), degToRad( 51.5733 ), "Little Dumbbell Nebula", "https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-76/"), // Little Dumbbell Nebula
+    MObj("m77", degToRad( 40.6692 ), degToRad( 0.0133 ), "Cetus A Galaxy", "https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-77/"), // Cetus A Galaxy
+    MObj("m78", degToRad( 86.7000 ), degToRad( 0.0500 ), "Diffuse Nebula in Orion", "https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-78/"), // Diffuse Nebula in Orion
+    MObj("m79", degToRad( 81.0450 ), degToRad( -24.5242 ), "Globular Cluster in Lepus", "https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-79/"), // Globular Cluster in Lepus
+    MObj("m80", degToRad( 244.2600 ), degToRad( -22.9750 ), "Globular Cluster in Scorpius", "https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-80/"), // Globular Cluster in Scorpius
+    MObj("m81", degToRad( 148.8883 ), degToRad( 69.0653 ), "Bode’s Galaxy", "https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-81/"), // Bode’s Galaxy
+    MObj("m82", degToRad( 148.9683 ), degToRad( 69.6797 ), "Cigar Galaxy", "https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-82/"), // Cigar Galaxy
+    MObj("m83", degToRad( 204.2533 ), degToRad( -29.8650 ), "Southern Pinwheel Galaxy", "https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-83/"), // Southern Pinwheel Galaxy
+    MObj("m84", degToRad( 186.2650 ), degToRad( 12.8875 ), "Elliptical Galaxy in Virgo", "https://science.nasa.gov/mission/hubble/science/explore-the-night-sky/hubble-messier-catalog/messier-84/"), // Elliptical Galaxy in Virgo
 )
 
-private fun findNearestMessier(raJ: Double, decJ: Double): String {
-    var best = "—"
+private fun findNearestMessier(raJ: Double, decJ: Double): messierDisplayData {
+    var best = messierDisplayData("-", "-", "-")
     var bestAng = Double.POSITIVE_INFINITY
     for (m in messierMini) {
         val ang = angularSeparation(raJ, decJ, m.raRad, m.decRad)
         if (ang < bestAng) {
             bestAng = ang
-            best = m.tag
+            best = messierDisplayData(m.tag, m.name, m.link)
         }
     }
     // Optional: only accept if within N degrees
-    return if (Math.toDegrees(bestAng) <= 5.0) best else "—"
+    return if (Math.toDegrees(bestAng) <= 5.0) best else messierDisplayData("-", "-", "-")
 }
 
 /* ===================== helpers ===================== */
