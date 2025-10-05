@@ -76,6 +76,8 @@ fun SensorScreen(sensorManager: SensorManager) {
     var rotat by remember { mutableStateOf(Triple(0f, 0f, 0f)) }
     var gyro by remember { mutableStateOf(Triple(0f, 0f, 0f)) }
     var TimeData by remember { mutableStateOf("") }
+    var gpsData by remember { mutableStateOf("") }
+
 
     // ✅ ADD: state for computed sky solution
     var altAzText by remember { mutableStateOf("") }
@@ -113,7 +115,7 @@ fun SensorScreen(sensorManager: SensorManager) {
                         altAzText = "Alt/Az: ${result.altDeg.format(1)}°, ${result.azDeg.format(1)}°"
                         raDecText = "RA/Dec (J2000): ${result.raHms}, ${result.decDms}"
                         mLabel = result.nearestMessier//"Nearest Messier: ${result.nearestMessier.name} \n${result.nearestMessier.tag} \n${result.nearestMessier.link}"
-
+                        gpsData = "Lat: $latDeg\n\tLon: $lonDeg"
                     }
                     Sensor.TYPE_GYROSCOPE -> {
                         gyro = Triple(x, y, z)
@@ -139,6 +141,7 @@ fun SensorScreen(sensorManager: SensorManager) {
         rotat = rotat,
         gyro = gyro,
         TimeData = TimeData,
+        gpsData = gpsData,
         altAzText = altAzText, // ✅ ADD
         raDecText = raDecText, // ✅ ADD
         mLabel = mLabel        // ✅ ADD
@@ -151,6 +154,7 @@ private fun SensorScreenContent(
     rotat: Triple<Float, Float, Float>,
     gyro: Triple<Float, Float, Float>,
     TimeData: String,
+    gpsData: String,
     altAzText: String,   // ✅ ADD
     raDecText: String,   // ✅ ADD
     mLabel: messierDisplayData       // ✅ ADD
@@ -164,6 +168,7 @@ private fun SensorScreenContent(
         Text("Rotation Vector (x, y, z): \n\t${rotat.first}, ${rotat.second}, ${rotat.third}")
         Text("Gyroscope     (x, y, z): \n\t${gyro.first}, ${gyro.second}, ${gyro.third}")
         Text("Time (ms): \n\t${TimeData}")
+        Text("GPS Location (deg): \n\t${gpsData}")
         // ✅ ADD: sky outputs
         Spacer(Modifier.height(12.dp))
         Text("Calculated frame:", style = MaterialTheme.typography.titleMedium)
@@ -222,6 +227,7 @@ private fun SensorScreenPreview() {
                 rotat = Triple(0.12f, 9.74f, -0.05f),
                 gyro = Triple(0.01f, -0.03f, 0.02f),
                 TimeData = "Time (ts): 1733352000000",
+                gpsData = "Lat: 41, Long: 72",
                 altAzText = "Alt/Az: 45.0°, 120.0°",
                 raDecText = "RA/Dec (J2000): 00:42:44, +41:16:09",
                 mLabel = messierDisplayData("-", "-", "-")
@@ -526,7 +532,6 @@ private fun raRadToHMS(ra: Double): String {
     return String.format("%02d:%02d:%02.0f", h, m, s)
 }
 
-@SuppressLint("DefaultLocale")
 private fun decRadToDMS(dec: Double): String {
     val sign = if (dec >= 0) "+" else "-"
     val absDeg = abs(Math.toDegrees(dec))
