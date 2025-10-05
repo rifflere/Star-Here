@@ -314,7 +314,7 @@ private fun computeSkySolutionFromRotationVector(
     val m = findNearestMessier(raJ, decJ)
 
     // Build IRSA link from raJ and decJ
-    val iLabel = irsaData("$raJ, $decJ", "https://irsa.ipac.caltech.edu/cgi-bin/Radar/nph-discovery?objstr=${raJ}${decJ}%20Equ%20J2000&mode=cone&radius=5&radunits=arcmin")
+    val iLabel = irsaData("$raJ, $decJ", "https://irsa.ipac.caltech.edu/cgi-bin/Radar/nph-discovery?objstr=${raJ} ${decJ}%20Equ%20J2000&mode=cone&radius=5&radunits=arcmin")
 
     /*
     * https://irsa.ipac.caltech.edu/cgi-bin/Radar/nph-discovery?objstr=00%3A42%3A44.3%20%2B41%3A16%3A08%20Equ%20J2000&mode=cone&radius=5&radunits=arcmin
