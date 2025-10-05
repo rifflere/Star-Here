@@ -102,10 +102,10 @@ fun SensorScreen(sensorManager: SensorManager) {
         }
 
         if (rotatSensor != null) {
-            sensorManager.registerListener(listener, rotatSensor, 1000000)
+            sensorManager.registerListener(listener, rotatSensor, 300000)
         }
         if (gyroSensor != null) {
-            sensorManager.registerListener(listener, gyroSensor, 1000000)
+            sensorManager.registerListener(listener, gyroSensor, 300000)
         }
 
         onDispose { sensorManager.unregisterListener(listener) }
@@ -319,17 +319,17 @@ private fun precessToJ2000(ra: Double, dec: Double, jd: Double): Pair<Double, Do
 }
 
 /** Find nearest Messier from a tiny demo list. Expand this with full M1–M110 later. */
-private data class MObj(val tag: String, val raRad: Double, val decRad: Double)
+private data class MObj(val tag: String, val raRad: Double, val decRad: Double, val name: String)
 private val messierMini = listOf(
     // NOTE: rough J2000 positions; good enough for demo
-    MObj("m31",  degToRad( 10.6847 ), degToRad( 41.2690 )), // Andromeda Galaxy
-    MObj("m42",  hToRad(5.0 + 35.0/60.0), degToRad(-5.45 )), // Orion Nebula
-    MObj("m45",  hToRad(3.0 + 47.0/60.0), degToRad(24.1  )), // Pleiades
-    MObj("m13",  hToRad(16.0 + 41.0/60.0), degToRad(36.46)), // Hercules Cluster
-    MObj("m57",  hToRad(18.0 + 53.0/60.0), degToRad(33.03)), // Ring Nebula
-    MObj("m1",   hToRad(5.0 + 34.0/60.0), degToRad(22.01)),  // Crab Nebula
-    MObj("m51",  hToRad(13.0 + 29.0/60.0), degToRad(47.20)), // Whirlpool
-    MObj("m33",  hToRad(1.0 + 33.0/60.0), degToRad(30.66))   // Triangulum
+    MObj("m31",  degToRad( 10.6847 ), degToRad( 41.2690 ), "Andromeda Galaxy"), // Andromeda Galaxy
+    MObj("m42",  hToRad(5.0 + 35.0/60.0), degToRad(-5.45 ), "Orion Nebula"), // Orion Nebula
+    MObj("m45",  hToRad(3.0 + 47.0/60.0), degToRad(24.1  ), "Pleiades"), // Pleiades
+    MObj("m13",  hToRad(16.0 + 41.0/60.0), degToRad(36.46), "Hecules Cluster"), // Hercules Cluster
+    MObj("m57",  hToRad(18.0 + 53.0/60.0), degToRad(33.03), "Ring Nebula"), // Ring Nebula
+    MObj("m1",   hToRad(5.0 + 34.0/60.0), degToRad(22.01), "Crab Nebula"),  // Crab Nebula
+    MObj("m51",  hToRad(13.0 + 29.0/60.0), degToRad(47.20), "Whirlpool"), // Whirlpool
+    MObj("m33",  hToRad(1.0 + 33.0/60.0), degToRad(30.66), "Triangulum")   // Triangulum
 )
 
 private fun findNearestMessier(raJ: Double, decJ: Double): String {
