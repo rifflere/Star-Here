@@ -1,6 +1,7 @@
 package com.example.myapplication_intro
 
-import android.hardware.GeomagneticField // ✅ ADD
+import android.annotation.SuppressLint
+import android.hardware.GeomagneticField
 import android.hardware.Sensor
 import android.hardware.SensorEvent
 import android.hardware.SensorEventListener
@@ -10,19 +11,41 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.text.LinkAnnotation
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextLinkStyles
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withLink
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.myapplication_intro.ui.theme.MyApplication_introTheme
-import kotlin.math.* // ✅ ADD
+import kotlin.math.abs
+import kotlin.math.asin
+import kotlin.math.atan2
+import kotlin.math.cos
+import kotlin.math.floor
+import kotlin.math.min
+import kotlin.math.sin
+import kotlin.math.sqrt
 
 class MainActivity : ComponentActivity() {
 
@@ -52,12 +75,12 @@ fun SensorScreen(sensorManager: SensorManager) {
     var header by remember { mutableStateOf("Star Here") }
     var rotat by remember { mutableStateOf(Triple(0f, 0f, 0f)) }
     var gyro by remember { mutableStateOf(Triple(0f, 0f, 0f)) }
-    var lastLine by remember { mutableStateOf("") }
+    var TimeData by remember { mutableStateOf("") }
 
     // ✅ ADD: state for computed sky solution
     var altAzText by remember { mutableStateOf("") }
     var raDecText by remember { mutableStateOf("") }
-    var mLabel by remember { mutableStateOf("") }
+    var mLabel by remember { mutableStateOf(messierDisplayData("-","-","-")) }
 
     // ✅ ADD: TEMP latitude/longitude (replace with GPS later)
     // Kent, WA-ish — replace with your real location or wire Fused Location
@@ -74,7 +97,7 @@ fun SensorScreen(sensorManager: SensorManager) {
                 val x = event.values.getOrNull(0) ?: 0f
                 val y = event.values.getOrNull(1) ?: 0f
                 val z = event.values.getOrNull(2) ?: 0f
-                lastLine = "Time (ts): $nowMs"
+                TimeData = "$nowMs"
 
                 when (event.sensor.type) {
                     Sensor.TYPE_ROTATION_VECTOR -> {
@@ -89,7 +112,7 @@ fun SensorScreen(sensorManager: SensorManager) {
                         )
                         altAzText = "Alt/Az: ${result.altDeg.format(1)}°, ${result.azDeg.format(1)}°"
                         raDecText = "RA/Dec (J2000): ${result.raHms}, ${result.decDms}"
-                        mLabel = "Nearest Messier: ${result.nearestMessier.name} \n\t${result.nearestMessier.tag} \n\t${result.nearestMessier.link}"
+                        mLabel = result.nearestMessier//"Nearest Messier: ${result.nearestMessier.name} \n${result.nearestMessier.tag} \n${result.nearestMessier.link}"
 
                     }
                     Sensor.TYPE_GYROSCOPE -> {
@@ -115,7 +138,7 @@ fun SensorScreen(sensorManager: SensorManager) {
         header = header,
         rotat = rotat,
         gyro = gyro,
-        lastLine = lastLine,
+        TimeData = TimeData,
         altAzText = altAzText, // ✅ ADD
         raDecText = raDecText, // ✅ ADD
         mLabel = mLabel        // ✅ ADD
@@ -127,26 +150,40 @@ private fun SensorScreenContent(
     header: String,
     rotat: Triple<Float, Float, Float>,
     gyro: Triple<Float, Float, Float>,
-    lastLine: String,
+    TimeData: String,
     altAzText: String,   // ✅ ADD
     raDecText: String,   // ✅ ADD
-    mLabel: String       // ✅ ADD
+    mLabel: messierDisplayData       // ✅ ADD
 ) {
     Column(Modifier.fillMaxSize().padding(16.dp)) {
-        Text(header, style = MaterialTheme.typography.titleMedium)
+        Text("\n")
+        Text(header, style = MaterialTheme.typography.titleLarge)
         Spacer(Modifier.height(8.dp))
 
-        Text("Rotation Vector (x, y, z): ${rotat.first}, ${rotat.second}, ${rotat.third}")
-        Text("Gyroscope     (x, y, z): ${gyro.first}, ${gyro.second}, ${gyro.third}")
-
-        Spacer(Modifier.height(16.dp))
-        Text(lastLine)
-
+        Text("Local Sensors:", style = MaterialTheme.typography.titleMedium)
+        Text("Rotation Vector (x, y, z): \n\t${rotat.first}, ${rotat.second}, ${rotat.third}")
+        Text("Gyroscope     (x, y, z): \n\t${gyro.first}, ${gyro.second}, ${gyro.third}")
+        Text("Time (ms): \n\t${TimeData}")
         // ✅ ADD: sky outputs
         Spacer(Modifier.height(12.dp))
+        Text("Calculated frame:", style = MaterialTheme.typography.titleMedium)
         Text(altAzText)
         Text(raDecText)
-        Text(mLabel)
+        Spacer(Modifier.height(16.dp))
+        Text("NASA information on location:", style = MaterialTheme.typography.titleMedium)
+        Text(buildAnnotatedString {
+            append("Nearest Messier: ")
+            withLink(
+                LinkAnnotation.Url(
+                    url = mLabel.link,
+                    TextLinkStyles(style = SpanStyle(color = Color.Blue))
+                )
+            ) {
+                append("${mLabel.tag}: ${mLabel.name}")
+            }
+        }
+        )
+
 
         Spacer(Modifier.height(24.dp))
 
@@ -184,10 +221,10 @@ private fun SensorScreenPreview() {
                 header = "Star Here",
                 rotat = Triple(0.12f, 9.74f, -0.05f),
                 gyro = Triple(0.01f, -0.03f, 0.02f),
-                lastLine = "Time (ts): 1733352000000",
+                TimeData = "Time (ts): 1733352000000",
                 altAzText = "Alt/Az: 45.0°, 120.0°",
                 raDecText = "RA/Dec (J2000): 00:42:44, +41:16:09",
-                mLabel = "Nearest Messier: m31"
+                mLabel = messierDisplayData("-", "-", "-")
             )
         }
     }
@@ -450,7 +487,7 @@ private fun findNearestMessier(raJ: Double, decJ: Double): messierDisplayData {
         }
     }
     // Optional: only accept if within N degrees
-    return if (Math.toDegrees(bestAng) <= 5.0) best else messierDisplayData("-", "-", "-")
+    return if (Math.toDegrees(bestAng) <= 10.0) best else messierDisplayData("-", "-", "-")
 }
 
 /* ===================== helpers ===================== */
@@ -480,6 +517,7 @@ private fun angularSeparation(ra1: Double, dec1: Double, ra2: Double, dec2: Doub
     return 2 * asin(min(1.0, sqrt(h)))
 }
 
+@SuppressLint("DefaultLocale")
 private fun raRadToHMS(ra: Double): String {
     val hours = Math.toDegrees(ra) / 15.0
     val h = floor(hours).toInt()
@@ -488,6 +526,7 @@ private fun raRadToHMS(ra: Double): String {
     return String.format("%02d:%02d:%02.0f", h, m, s)
 }
 
+@SuppressLint("DefaultLocale")
 private fun decRadToDMS(dec: Double): String {
     val sign = if (dec >= 0) "+" else "-"
     val absDeg = abs(Math.toDegrees(dec))
@@ -500,3 +539,4 @@ private fun decRadToDMS(dec: Double): String {
 private fun degToRad(d: Double) = Math.toRadians(d)
 private fun hToRad(h: Double) = Math.toRadians(h * 15.0)
 private fun Double.format(n: Int) = "%.${n}f".format(this)
+
